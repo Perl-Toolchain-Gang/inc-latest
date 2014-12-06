@@ -4,7 +4,7 @@ use warnings;
 package inc::latest::private;
 # ABSTRACT: private implementation for inc::latest
 
-our $VERSION = '0.500';
+our $VERSION = '0.501';
 
 use File::Spec;
 use IO::File;

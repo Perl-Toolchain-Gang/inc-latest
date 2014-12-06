@@ -5,7 +5,7 @@ package inc::latest;
 
 # ABSTRACT: use modules bundled in inc/ if they are newer than installed ones
 
-our $VERSION = '0.500';
+our $VERSION = '0.501';
 
 package inc::latest;
 
