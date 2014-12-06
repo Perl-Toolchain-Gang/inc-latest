@@ -137,7 +137,7 @@ Arguments to C<inc::latest> are module names that are checked against both
 the current C<@INC> array and against specially-named directories in
 C<inc>.  If the bundled version is newer than the installed one (or the
 module isn't installed, then, the bundled directory is added to the start
-of <@INC> and the module is loaded from there.
+of C<@INC> and the module is loaded from there.
 
 There are actually two variations of C<inc::latest> -- one for authors and
 one for the C<inc> directory.  For distribution authors, the C<inc::latest>
