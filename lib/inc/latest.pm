@@ -118,73 +118,107 @@ sub _mod2path {
 
 1;
 
-=for Pod::Coverage bundle_module write
-
 =head1 SYNOPSIS
 
-  # in Build.PL
-  use inc::latest 'Module::Build';
+  # in Makefile.PL or Build.PL
+  use inc::latest 'Some::Configure::Prereq';
 
 =head1 DESCRIPTION
 
-The C<inc::latest> module helps bootstrap configure-time dependencies for CPAN
-distributions.  These dependencies get bundled into the C<inc> directory within
-a distribution and are used by Build.PL (or Makefile.PL).
+B<WARNING -- THIS IS AN EXPERIMENTAL MODULE>.  It was originally bundled
+(as an experiment) with L<Module::Build> and has been split out for more
+general use.
 
-Arguments to C<inc::latest> are module names that are checked against both the
-current C<@INC> array and against specially-named directories in C<inc>.  If
-the bundled version is newer than the installed one (or the module isn't
-installed, then, the bundled directory is added to the start of <@INC> and the
-module is loaded from there.
+The C<inc::latest> module helps bootstrap configure-time dependencies for
+CPAN distributions.  These dependencies get bundled into the C<inc>
+directory within a distribution and are used by F<Makefile.PL> or F<Build.PL>.
 
-There are actually two variations of C<inc::latest> -- one for authors and one
-for the C<inc> directory.  For distribution authors, the C<inc::latest>
-installed in the system will record modules loaded via C<inc::latest> and can
-be used to create the bundled files in C<inc>, including writing the second
-variation as C<inc/latest.pm>.
+Arguments to C<inc::latest> are module names that are checked against both
+the current C<@INC> array and against specially-named directories in
+C<inc>.  If the bundled version is newer than the installed one (or the
+module isn't installed, then, the bundled directory is added to the start
+of <@INC> and the module is loaded from there.
 
-This second C<inc::latest> is the one that is loaded in a distribution being
-installed (e.g. from Build.PL).  This bundled C<inc::latest> is the one
-that determines which module to load.
+There are actually two variations of C<inc::latest> -- one for authors and
+one for the C<inc> directory.  For distribution authors, the C<inc::latest>
+installed in the system will record modules loaded via C<inc::latest> and
+can be used to create the bundled files in C<inc>, including writing the
+second variation as C<inc/latest.pm>.
+
+This second C<inc::latest> is the one that is loaded in a distribution
+being installed (e.g. from F<Makefile.PL> or F<Build.PL>).  This bundled
+C<inc::latest> is the one that determines which module to load.
 
 =head2 Special notes on bundling
 
 The C<inc::latest> module creates bundled directories based on the packlist
 file of an installed distribution.  Even though C<inc::latest> takes module
-name arguments, it is better to think of it as bundling and making available
-entire I<distributions>.  When a module is loaded through C<inc::latest>,
-it looks in all bundled distributions in C<inc/> for a newer module than
-can be found in the existing C<@INC> array.
+name arguments, it is better to think of it as bundling and making
+available entire I<distributions>.  When a module is loaded through
+C<inc::latest>, it looks in all bundled distributions in C<inc/> for a
+newer module than can be found in the existing C<@INC> array.
 
-Thus, the module-name provided should usually be the "top-level" module name of
-a distribution, though this is not strictly required.  C<inc::latest> has a
-number of heuristics to map module names to packlists, allowing users to do
-things like this:
+Thus, the module-name provided should usually be the "top-level" module
+name of a distribution, though this is not strictly required.
+C<inc::latest> has a number of heuristics to discover module names,
+allowing users to do things like this:
 
   use inc::latest 'Devel::AssertOS::Unix';
 
 even though Devel::AssertOS::Unix is contained within the Devel-CheckOS
 distribution.
 
-At the current time, packlists are required.  Thus, bundling dual-core modules
-may require a 'forced install' over versions in the latest version of perl
-in order to create the necessary packlist for bundling.
+At the current time, packlists are required.  Thus, bundling dual-core
+modules may require a 'forced install' over versions in the latest version
+of perl in order to create the necessary packlist for bundling.
+
+=head2 Managing dependency chains
+
+Before bundling a distribution you must ensure that all prerequisites are
+also bundled and load in the correct order.
+
+For example, if you need C<Wibble>, but C<Wibble> depends on C<Wobble>,
+and you have bundled C<Module::Build>, your F<Build.PL> might look like this:
+
+  use inc::latest 'Wobble';
+  use inc::latest 'Wibble';
+  use inc::latest 'Module::Build';
+
+  Module::Build->new(
+    module_name => 'Foo::Bar',
+    license => 'perl',
+  )->create_build_script;
+
+Authors are strongly suggested to limit the bundling of additional
+dependencies if at all possible and to carefully test their distribution
+tarballs before uploading to CPAN.
 
 =head1 USAGE
 
-When calling C<use>, the bundled C<inc::latest> takes a single module name and
-optional arguments to pass to that module's own import method.
+=head2 As bundled in inc/
+
+Using L</Author-mode>, a special stub module will be created in your
+distribute directory as F<inc/latest.pm>.  In your F<Makefile.PL> or
+F<Build.PL>, you can then load C<inc::latest> to load bundled modules.
+
+When calling C<use>, the bundled C<inc::latest> takes a single module name
+and optional arguments to pass to that module's own import method.
 
   use inc::latest 'Foo::Bar' qw/foo bar baz/;
 
+The implementation is private.  Only the C<import> method is public.
+
 =head2 Author-mode
 
-You are in author-mode inc::latest if any of the Author-mode methods are
-available.  For example:
+When you have L<inc::latest> installed from CPAN, then you are in author-mode
+if any of the Author-mode methods are available.  For example:
 
   if ( inc::latest->can('write') ) {
     inc::latest->write('inc');
   }
+
+Using author-mode, you can create the stub F<inc/latest.pm> and bundle
+modules into F<inc>.
 
 =over 4
 
@@ -192,16 +226,16 @@ available.  For example:
 
   my @list = inc::latest->loaded_modules;
 
-This takes no arguments and always returns a list of module names requested for
-loading via "use inc::latest 'MODULE'", regardless of whether the load was
-successful or not.
+This takes no arguments and always returns a list of module names requested
+for loading via "use inc::latest 'MODULE'", regardless of whether the load
+was successful or not.
 
 =item write()
 
   inc::latest->write( 'inc' );
 
-This writes the bundled version of inc::latest to the directory name given as an
-argument.  It almost all cases, it should be 'C<inc>'.
+This writes the bundled version of inc::latest to the directory name given
+as an argument.  It almost all cases, it should be 'C<inc>'.
 
 =item bundle_module()
 
@@ -209,25 +243,21 @@ argument.  It almost all cases, it should be 'C<inc>'.
     inc::latest->bundle_module($mod, $dir);
   }
 
-If $mod corresponds to a packlist, then this function creates a specially-named
-directory in $dir and copies all .pm files from the modlist to the new
-directory (which almost always should just be 'inc').  For example, if Foo::Bar
-is the name of the module, and $dir is 'inc', then the directory would be
-'inc/inc_Foo-Bar' and contain files like this:
+If $mod corresponds to a packlist, then this function creates a
+specially-named directory in $dir and copies all .pm files from the modlist
+to the new directory (which almost always should just be 'inc').  For
+example, if Foo::Bar is the name of the module, and $dir is 'inc', then the
+directory would be 'inc/inc_Foo-Bar' and contain files like this:
 
   inc/inc_Foo-Bar/Foo/Bar.pm
 
-Currently, $mod B<must> have a packlist.  If this is not the case (e.g. for a
-dual-core module), then the bundling will fail.  You may be able to create a
-packlist by forced installing the module on top of the version that came with
-core Perl.
+Currently, $mod B<must> have a packlist.  If this is not the case (e.g. for
+a dual-core module), then the bundling will fail.  You may be able to
+create a packlist by forced installing the module on top of the version
+that came with core Perl.
 
 =back
 
-=head2 As bundled in inc/
-
-All methods are private.  Only the C<import> method is public.
-
 =cut
 
-# vim: ts=4 sts=4 sw=4 et:
+# vim: ts=4 sts=4 sw=4 tw=75 et:

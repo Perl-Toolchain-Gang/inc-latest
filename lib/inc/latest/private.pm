@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 package inc::latest::private;
+# ABSTRACT: private implementation for inc::latest
 
 our $VERSION = '0.4006';
 
@@ -99,3 +100,11 @@ sub _mod2path {
 
 1;
 
+=head1 DESCRIPTION
+
+This module has the private methods used to find and load bundled modules.
+It should not be used directly.
+
+=cut
+
+# vim: ts=4 sts=4 sw=4 tw=75 et:
