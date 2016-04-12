@@ -13,12 +13,13 @@ use IO::File;
 # so that the calling package is correct when $mod->import() runs.
 sub import {
     my ( $package, $mod, @args ) = @_;
-    my $file = $package->_mod2path($mod);
 
-    if ( $INC{$file} ) {
+    if ( $INC{ join( '/', split( /::/, $mod ) ) . '.pm' } ) {
         # Already loaded, but let _load_module handle import args
         goto \&_load_module;
     }
+
+    my $file = $package->_mod2path($mod);
 
     # A bundled copy must be present
     my ( $bundled, $bundled_dir ) = $package->_search_bundled($file)
