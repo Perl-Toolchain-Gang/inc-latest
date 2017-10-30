@@ -31,6 +31,7 @@ sub import {
         goto \&_load_module;
     }
 
+    no warnings 'numeric';
     if ( _version($from_inc) >= _version($bundled) ) {
         # Ignore the bundled copy
         goto \&_load_module;
